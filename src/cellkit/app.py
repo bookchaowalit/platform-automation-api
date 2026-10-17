@@ -350,6 +350,7 @@ def create_app(
                     raise HTTPException(
                         status_code=409, detail={"error": "replayed", "status": status}
                     )
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query -- schema/table/column names come from the cell spec (identifier-validated in spec.py); values are bound as %s parameters
                 conn.execute(
                     f"UPDATE {schema}.outbox SET execution_id = %s WHERE execution_id = %s",
                     (execution, work.marker),
@@ -463,6 +464,7 @@ def create_app(
     def load(
         conn: psycopg.Connection, r: Resource, record_id: int, *, lock: bool = False
     ) -> dict[str, Any]:
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query -- schema/table/column names come from the cell spec (identifier-validated in spec.py); values are bound as %s parameters
         row = conn.execute(
             f"SELECT {r.select} FROM {schema}.{r.table} WHERE id = %s{' FOR UPDATE' if lock else ''}",
             (record_id,),
@@ -484,6 +486,7 @@ def create_app(
                 " ON CONFLICT DO NOTHING",
                 (caller.workspace, caller.actor, r.name, key),
             )
+            # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query -- schema/table/column names come from the cell spec (identifier-validated in spec.py); values are bound as %s parameters
             row = conn.execute(
                 f"SELECT record_id FROM {schema}.create_keys WHERE actor = %s AND kind = %s AND key = %s",
                 (caller.actor, r.name, key),
@@ -594,6 +597,7 @@ def create_app(
             )
             with bound(caller) as conn:
                 rows = conn.execute(
+                    # nosemgrep: python.django.security.injection.tainted-sql-string.tainted-sql-string -- table/columns come from the identifier-validated cell spec; WHERE clauses are fixed templates with values bound as %s parameters
                     f"SELECT {r.select} FROM {table} WHERE {' AND '.join(clauses)}"
                     f" ORDER BY {sort} LIMIT %s OFFSET %s",
                     [*params, limit, offset],
@@ -612,6 +616,7 @@ def create_app(
             clauses, params = where(r, request.query_params)
             with bound(caller) as conn:
                 rows = conn.execute(
+                    # nosemgrep: python.django.security.injection.tainted-sql-string.tainted-sql-string -- group_by is checked against the resource's filter allow-list before use; values are bound as %s parameters
                     f"SELECT {group_by} AS key, count(*) AS n FROM {table}"
                     f" WHERE {' AND '.join(clauses)} GROUP BY 1",
                     params,
@@ -622,6 +627,7 @@ def create_app(
         def by_legacy(legacy_id: int, caller: Caller):
             allow(caller, f"{cell.name}.{r.name}:read", r.name, not_found=True)
             with bound(caller) as conn:
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query -- schema/table/column names come from the cell spec (identifier-validated in spec.py); values are bound as %s parameters
                 row = conn.execute(
                     f"SELECT {r.select} FROM {table} WHERE legacy_id = %s", (legacy_id,)
                 ).fetchone()
@@ -674,6 +680,7 @@ def create_app(
 
             def op(work: Work) -> Plan:
                 if reserved is not None:
+                    # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query -- schema/table/column names come from the cell spec (identifier-validated in spec.py); values are bound as %s parameters
                     existing = work.conn.execute(
                         f"SELECT {r.select} FROM {table} WHERE id = %s", (reserved,)
                     ).fetchone()
