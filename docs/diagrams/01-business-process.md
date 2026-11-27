@@ -3,6 +3,8 @@
 Automation cell เก็บ **นิยาม** ของงานอัตโนมัติ (cron job, automation rule, workflow pipeline) และ **log** ของแต่ละรอบการทำงาน
 ตัว cell เองไม่รัน job ไม่ evaluate rule และไม่ execute pipeline (`PRODUCT.md` "Out of scope") — งานจริงรันที่อื่น แล้วเขียน log กลับมาที่นี่
 
+Last reviewed: 2026-11-27 · commit `bd5deb8`
+
 ## As-Is (จากโค้ดวันนี้)
 
 ```mermaid
@@ -42,12 +44,12 @@ flowchart LR
 
 ข้อเท็จจริงจาก central docs: `CRON-DAG.md` บันทึกว่า local `cron_runner.py` / `cron_registry.py` ถูกลบ 2026-10-11 และ "none of the 40 local jobs ever ran" ใน history ของ cell นี้ — งาน scheduled ย้ายไป Railway cron ของ cell เจ้าของ
 
-Sources: `PRODUCT.md`, `README.md`, `cell.yaml`, `src/cellkit/app.py`, `src/cellkit/platform.py`,
+Sources: `PRODUCT.md`, `README.md`, `cell.yaml`, `pyproject.toml` (entry points `automation-api`, `automation-mcp` มาจาก wheel `platform-cellkit` 1.0.11; โค้ด route/platform อยู่ใน wheel ไม่อยู่ใน repo นี้ [ต้องยืนยัน] ว่า flow decide/begin/finish ตรงกับ cellkit รุ่นนี้),
 platform-ops-cli@0880abe `infra/scripts/sync/gmail_to_todoist.py`, `infra/scripts/sync/gmail_categorizer.py`, `infra/scripts/sync/gmail_daily_digest.py`,
 `infra/scripts/platform/monitor_health.py`, `infra/scripts/workflows/decision_engine.py`, `infra/scripts/utils/alerts.py`,
 [architecture-docs CRON-DAG.md](https://github.com/bookchaowalit/architecture-docs/blob/main/docs/architecture/CRON-DAG.md)
 
-## To-Be
+## To-Be (จาก `PRODUCT.md` และ `DOCPACK/00-product-card.md`)
 
 แหล่ง To-Be ที่มีใน repo: `PRODUCT.md` ("Success" และ "Measures — Proposed") และ `DOCPACK/00-product-card.md` §8 เท่านั้น ไม่มี `docs/UPGRADE-PLAN.md` และ `specs/001-l2-baseline` ไม่เปลี่ยน behaviour
 
@@ -60,6 +62,14 @@ flowchart LR
 ```
 
 Sources: `PRODUCT.md` (Product Purpose, Measures), `DOCPACK/00-product-card.md`
+
+## Gap
+
+| ID | As-Is → To-Be | Status | Owner | Evidence |
+|---|---|---|---|---|
+| G1 | ไม่ทราบว่า runner ตัวไหนอ่านนิยาม cron-jobs แล้วรันตาม schedule → ทุก job/rule ที่ใช้งานอยู่ถูกนิยามที่นี่ครั้งเดียว | decide | owner | `PRODUCT.md` Users ([ต้องยืนยัน]), `CRON-DAG.md` (local runner ถูกลบ 2026-10-11) |
+| G2 | log จาก ops-cli ไม่ใส่ `rule_id`/`pipeline_id` → ทุก log ระบุ rule หรือ pipeline | todo | claude | `PRODUCT.md` Success; platform-ops-cli@0880abe `gmail_to_todoist.py` |
+| G3 | ไม่มีใครเก็บ measure (stale jobs, สัดส่วน success=false, 5xx/p95) → วัดจริง | todo | claude | `PRODUCT.md` Measures ("nothing collects these yet") |
 
 ## Open questions
 
